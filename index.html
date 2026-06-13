@@ -15,7 +15,19 @@
         
         h1 { margin: 20px 0; font-size: 2rem; letter-spacing: 1px; font-weight: 600; text-transform: uppercase; color: #f0f0f0; border-bottom: 2px solid #333; padding-bottom: 10px; width: 100%; max-width: 900px; text-align: center; }
 
-        /* --- SPLASH SCREEN / AUDIO UNLOCK OVERLAY --- */
+        /* --- COLLAPSIBLE DROP-DOWN SECTIONS FOR MOBILE --- */
+        details { grid-column: 1 / -1; width: 100%; background: #1a1a1a; border: 1px solid #2d2d2d; border-radius: 14px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease; }
+        details[open] { border-color: #00ffcc; }
+        
+        summary { padding: 18px 20px; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 2px; color: #00ffcc; cursor: pointer; user-select: none; font-weight: bold; outline: none; display: flex; align-items: center; justify-content: space-between; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: '▾'; font-size: 1.2rem; color: #888; transition: transform 0.2s; }
+        details[open] summary::after { transform: rotate(180deg); color: #00ffcc; }
+        details[open] summary { border-bottom: 1px solid #2d2d2d; }
+
+        .section-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; padding: 20px; background: #151515; border-radius: 0 0 14px 14px; }
+
+        /* --- SPLASH SCREEN / AUDIO OVERLAY --- */
         #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d0d0d; display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s; }
         .welcome-box { background: #1a1a1a; padding: 40px 30px; border-radius: 16px; border: 2px solid #00ffcc; box-shadow: 0 0 25px rgba(0, 255, 204, 0.25); max-width: 450px; text-align: center; width: 90%; }
         .welcome-box h2 { color: #00ffcc; font-size: 1.8rem; margin-bottom: 15px; text-transform: uppercase; }
@@ -48,11 +60,11 @@
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; width: 100%; max-width: 900px; margin-top: 10px; }
         .monitor-card { background: #1e1e1e; border: 1px solid #2d2d2d; border-radius: 14px; padding: 25px; text-align: center; box-shadow: 0 6px 16px rgba(0,0,0,0.4); transition: transform 0.2s; }
         .monitor-card:hover { transform: translateY(-3px); }
-        .monitor-card h3 { font-size: 0.95rem; text-transform: uppercase; tracking: 1px; color: #888888; margin-bottom: 15px; }
+        .monitor-card h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #888888; margin-bottom: 15px; }
         
         /* DATA VALUES & METRICS UI */
-        .value-display { font-size: 2.8rem; font-weight: 700; color: #00ffcc; line-height: 1; margin-bottom: 5px; }
-        .unit { font-size: 1.2rem; font-weight: 400; color: #666666; margin-left: 3px; }
+        .value-display { font-size: 2.5rem; font-weight: 700; color: #00ffcc; line-height: 1; margin-bottom: 5px; transition: color 0.4s ease; }
+        .unit { font-size: 1.1rem; font-weight: 400; color: #666666; margin-left: 3px; }
         
         /* ALERTS AND SYSTEM STATUS BOX */
         .status-card { grid-column: 1 / -1; background: #1e1e1e; padding: 20px; border-radius: 14px; border: 1px solid #2d2d2d; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px; }
@@ -74,6 +86,7 @@
     <div id="battery-alert-banner">⚠️ WARNING: Battery level has dropped below 55%! Please plug in to charge immediately.</div>
     
     <div class="dashboard-grid">
+        
         <div class="monitor-card">
             <h3>Battery Bank Status</h3>
             <div class="value-display"><span id="battery">0.00</span><span class="unit">V</span></div>
@@ -99,6 +112,46 @@
             <div class="value-display"><span id="temperature">0.0</span><span class="unit">°C</span></div>
         </div>
 
+        <details>
+            <summary>🔋 Individual Battery Cells</summary>
+            <div class="section-grid">
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery Cell 1 Temp</h3>
+                    <div class="value-display"><span id="temp-bat1">0.0</span><span class="unit">°C</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery Cell 2 Temp</h3>
+                    <div class="value-display"><span id="temp-bat2">0.0</span><span class="unit">°C</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery Cell 3 Temp</h3>
+                    <div class="value-display"><span id="temp-bat3">0.0</span><span class="unit">°C</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery Cell 4 Temp</h3>
+                    <div class="value-display"><span id="temp-bat4">0.0</span><span class="unit">°C</span></div>
+                </div>
+            </div>
+        </details>
+
+        <details>
+            <summary>🔌 Individual Appliance Loads</summary>
+            <div class="section-grid">
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Lab Lights Power</h3>
+                    <div class="value-display" style="color: #e0e0e0;"><span id="power-lights">0.0</span><span class="unit">W</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Lab Fans Power</h3>
+                    <div class="value-display" style="color: #e0e0e0;"><span id="power-fans">0.0</span><span class="unit">W</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Workbench Bench Power</h3>
+                    <div class="value-display" style="color: #e0e0e0;"><span id="power-bench">0.0</span><span class="unit">W</span></div>
+                </div>
+            </div>
+        </details>
+
         <div class="status-card">
             <h3>System Status Assessment</h3>
             <div id="status">CONNECTING TO STREAM...</div>
@@ -106,11 +159,9 @@
     </div>
 
     <script>
-        // Set up the local alarm audio instance
         const alarmSound = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'); 
-alarmSound.loop = true;
+        alarmSound.loop = true;
 
-        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBZDLpFzSf9UY0Ema_iEtGfNDmdnPf69EQ",
             authDomain: "workshop-monitor-83eb6.firebaseapp.com",
@@ -121,7 +172,6 @@ alarmSound.loop = true;
             appId: "1:46018915539:web:f75ef7e2b4cea45eddf826"
         };
 
-        // Initialize Firebase services
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
@@ -133,19 +183,38 @@ alarmSound.loop = true;
 
             const splash = document.getElementById('splash-screen');
             splash.style.opacity = 0;
-            setTimeout(() => {
-                splash.style.display = 'none';
-            }, 500);
+            setTimeout(() => { splash.style.display = 'none'; }, 500);
         }
 
-        // --- ASYNCHRONOUS REALTIME EVENT LISTENERS ---
-        
+        // DYNAMIC COLOR RULE FOR TEMPERATURES
+        function updateTemperatureCard(elementId, val) {
+            const container = document.getElementById(elementId);
+            if (val === null) {
+                container.innerText = "0.0";
+                container.parentElement.style.color = "#666666";
+                return;
+            }
+            
+            container.innerText = val.toFixed(1);
+            
+            // Apply color thresholds based on ESP32 Failsafe parameters
+            if (val > 32.0) {
+                container.parentElement.style.color = "#ff3333"; // 🔴 CRITICAL
+            } else if (val > 30.0) {
+                container.parentElement.style.color = "#ff6600"; // 🟠 DANGER
+            } else if (val > 28.0) {
+                container.parentElement.style.color = "#ffcc00"; // 🟡 WARNING
+            } else {
+                container.parentElement.style.color = "#00ff66"; // 🟢 NORMAL
+            }
+        }
+
+        // --- FIREBASE REALTIME LISTENERS ---
         database.ref('/Lab/BatteryVoltage').on('value', (snapshot) => {
             const val = snapshot.val();
             document.getElementById('battery').innerText = (val !== null) ? val.toFixed(2) : "0.00";
         });
 
-        // Listeners for SoC and DoD metrics
         database.ref('/Lab/State_Of_Charge_Percent').on('value', (snapshot) => {
             const val = snapshot.val();
             document.getElementById('soc-display').innerText = (val !== null) ? val.toFixed(1) : "0.0";
@@ -156,15 +225,9 @@ alarmSound.loop = true;
             document.getElementById('dod-display').innerText = (val !== null) ? val.toFixed(1) : "0.0";
         });
 
-        // Low Battery Notification Flag Listener
         database.ref('/Lab/Battery_Low_Alert').on('value', (snapshot) => {
             const isLow = snapshot.val();
-            const banner = document.getElementById('battery-alert-banner');
-            if (isLow === true) {
-                banner.style.display = 'block';
-            } else {
-                banner.style.display = 'none';
-            }
+            document.getElementById('battery-alert-banner').style.display = (isLow === true) ? 'block' : 'none';
         });
 
         database.ref('/Lab/Power_Total_W').on('value', (snapshot) => {
@@ -173,8 +236,35 @@ alarmSound.loop = true;
         });
 
         database.ref('/Lab/Temp_Average_Bank').on('value', (snapshot) => {
+            updateTemperatureCard('temperature', snapshot.val());
+        });
+
+        // CELL LEVEL TELEMETRY (DYNAMIC COLORS APPLIED)
+        database.ref('/Lab/Temp_Bat1').on('value', (snapshot) => {
+            updateTemperatureCard('temp-bat1', snapshot.val());
+        });
+        database.ref('/Lab/Temp_Bat2').on('value', (snapshot) => {
+            updateTemperatureCard('temp-bat2', snapshot.val());
+        });
+        database.ref('/Lab/Temp_Bat3').on('value', (snapshot) => {
+            updateTemperatureCard('temp-bat3', snapshot.val());
+        });
+        database.ref('/Lab/Temp_Bat4').on('value', (snapshot) => {
+            updateTemperatureCard('temp-bat4', snapshot.val());
+        });
+
+        // APPLIANCE INDIVIDUAL LOADS
+        database.ref('/Lab/Power_Lights_W').on('value', (snapshot) => {
             const val = snapshot.val();
-            document.getElementById('temperature').innerText = (val !== null) ? val.toFixed(1) : "0.0";
+            document.getElementById('power-lights').innerText = (val !== null) ? val.toFixed(1) : "0.0";
+        });
+        database.ref('/Lab/Power_Fans_W').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('power-fans').innerText = (val !== null) ? val.toFixed(1) : "0.0";
+        });
+        database.ref('/Lab/Power_Bench_W').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('power-bench').innerText = (val !== null) ? val.toFixed(1) : "0.0";
         });
 
         database.ref('/Lab/System_Status').on('value', (snapshot) => {
@@ -185,7 +275,7 @@ alarmSound.loop = true;
             if (statusText.includes("CRITICAL")) {
                 statusElement.style.color = "#ff3333";
                 statusElement.style.textShadow = "0 0 15px rgba(255, 51, 51, 0.4)";
-                alarmSound.play().catch(e => console.log("Audio waiting for active context."));
+                alarmSound.play().catch(e => {});
             } else if (statusText.includes("WARNING")) {
                 statusElement.style.color = "#ff9900";
                 statusElement.style.textShadow = "0 0 15px rgba(255, 153, 0, 0.4)";
