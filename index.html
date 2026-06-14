@@ -80,7 +80,7 @@
           .catch(err => console.log("Service Worker Failed", err));
       }
     </script>
-    </head>
+</head>
 <body>
 
     <div id="splash-screen">
@@ -98,7 +98,7 @@
     <div class="dashboard-grid">
         
         <div class="monitor-card">
-            <h3>Battery Bank Status</h3>
+            <h3>Total Battery Bank Status</h3>
             <div class="value-display"><span id="battery">0.00</span><span class="unit">V</span></div>
         </div>
 
@@ -123,7 +123,29 @@
         </div>
 
         <details>
-            <summary>🔋 Individual Battery Cells</summary>
+            <summary>⚡ Individual Battery Voltages (12V Blocks)</summary>
+            <div class="section-grid">
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery 1 Voltage</h3>
+                    <div class="value-display" style="color: #00ccff;"><span id="volt-bat1">0.00</span><span class="unit">V</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery 2 Voltage</h3>
+                    <div class="value-display" style="color: #00ccff;"><span id="volt-bat2">0.00</span><span class="unit">V</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery 3 Voltage</h3>
+                    <div class="value-display" style="color: #00ccff;"><span id="volt-bat3">0.00</span><span class="unit">V</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery 4 Voltage</h3>
+                    <div class="value-display" style="color: #00ccff;"><span id="volt-bat4">0.00</span><span class="unit">V</span></div>
+                </div>
+            </div>
+        </details>
+
+        <details>
+            <summary>🔋 Individual Battery Cells Temperature</summary>
             <div class="section-grid">
                 <div class="monitor-card" style="background:#252525;">
                     <h3>Battery Cell 1 Temp</h3>
@@ -196,7 +218,6 @@
             setTimeout(() => { splash.style.display = 'none'; }, 500);
         }
 
-        // DYNAMIC COLOR RULE FOR TEMPERATURES
         function updateTemperatureCard(elementId, val) {
             const container = document.getElementById(elementId);
             if (val === null) {
@@ -204,25 +225,42 @@
                 container.parentElement.style.color = "#666666";
                 return;
             }
-            
             container.innerText = val.toFixed(1);
-            
-            // Apply color thresholds based on ESP32 Failsafe parameters
             if (val > 32.0) {
-                container.parentElement.style.color = "#ff3333"; // 🔴 CRITICAL
+                container.parentElement.style.color = "#ff3333";
             } else if (val > 30.0) {
-                container.parentElement.style.color = "#ff6600"; // 🟠 DANGER
+                container.parentElement.style.color = "#ff6600";
             } else if (val > 28.0) {
-                container.parentElement.style.color = "#ffcc00"; // 🟡 WARNING
+                container.parentElement.style.color = "#ffcc00";
             } else {
-                container.parentElement.style.color = "#00ff66"; // 🟢 NORMAL
+                container.parentElement.style.color = "#00ff66";
             }
         }
 
         // --- FIREBASE REALTIME LISTENERS ---
+        
+        // General Bank Voltage
         database.ref('/Lab/BatteryVoltage').on('value', (snapshot) => {
             const val = snapshot.val();
             document.getElementById('battery').innerText = (val !== null) ? val.toFixed(2) : "0.00";
+        });
+
+        // INDIVIDUAL BATTERY VOLTAGES LISTENERS
+        database.ref('/Lab/Volt_Bat1').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('volt-bat1').innerText = (val !== null) ? val.toFixed(2) : "0.00";
+        });
+        database.ref('/Lab/Volt_Bat2').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('volt-bat2').innerText = (val !== null) ? val.toFixed(2) : "0.00";
+        });
+        database.ref('/Lab/Volt_Bat3').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('volt-bat3').innerText = (val !== null) ? val.toFixed(2) : "0.00";
+        });
+        database.ref('/Lab/Volt_Bat4').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('volt-bat4').innerText = (val !== null) ? val.toFixed(2) : "0.00";
         });
 
         database.ref('/Lab/State_Of_Charge_Percent').on('value', (snapshot) => {
@@ -249,7 +287,6 @@
             updateTemperatureCard('temperature', snapshot.val());
         });
 
-        // CELL LEVEL TELEMETRY (DYNAMIC COLORS APPLIED)
         database.ref('/Lab/Temp_Bat1').on('value', (snapshot) => {
             updateTemperatureCard('temp-bat1', snapshot.val());
         });
@@ -263,7 +300,6 @@
             updateTemperatureCard('temp-bat4', snapshot.val());
         });
 
-        // APPLIANCE INDIVIDUAL LOADS
         database.ref('/Lab/Power_Lights_W').on('value', (snapshot) => {
             const val = snapshot.val();
             document.getElementById('power-lights').innerText = (val !== null) ? val.toFixed(1) : "0.0";
