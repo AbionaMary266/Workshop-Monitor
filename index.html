@@ -7,6 +7,8 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* --- GLOBAL FORMATTING & RESET --- */
@@ -68,7 +70,22 @@
         
         /* ALERTS AND SYSTEM STATUS BOX */
         .status-card { grid-column: 1 / -1; background: #1e1e1e; padding: 20px; border-radius: 14px; border: 1px solid #2d2d2d; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px; }
-        #status { font-size: 1.6rem; font-weight: bold; color: #00ff66; text-transform: uppercase; text-shadow: 0 0 10px rgba(0, 255, 102, 0.2); transition: color 0.3s ease; }
+        #status { font-size: 1.6rem; font-weight: bold; color: #00ff66; text-transform: uppercase; text-shadow: 0 0 10px rgba(0, 255, 102, 0.2); transition: color 0.3s ease; text-align: center;}
+
+        /* --- HISTORY CHARTS & TABLE UI (NEW) --- */
+        .history-section { width: 100%; max-width: 900px; margin-top: 30px; background: #1e1e1e; border: 1px solid #2d2d2d; border-radius: 14px; padding: 25px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
+        .history-section h2 { font-size: 1.3rem; color: #00ffcc; margin-bottom: 25px; text-transform: uppercase; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        
+        .chart-container { position: relative; height: 250px; width: 100%; margin-bottom: 40px; }
+        .chart-title { color: #aaaaaa; font-size: 0.9rem; text-transform: uppercase; text-align: center; margin-bottom: 10px; letter-spacing: 1px;}
+
+        .table-wrapper { max-height: 400px; overflow-y: auto; border: 1px solid #2d2d2d; border-radius: 8px; background: #151515; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        thead { background-color: #111; color: #00ffcc; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.5);}
+        th, td { padding: 15px; border-bottom: 1px solid #2d2d2d; }
+        th { text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;}
+        tbody tr:hover { background-color: #252525; }
+
     </style>
 
     <link rel="manifest" href="manifest.json">
@@ -123,7 +140,7 @@
         </div>
 
         <details>
-            <summary>⚡ Individual Battery Voltages (12V Blocks)</summary>
+            <summary>⚡ Individual Battery Voltages</summary>
             <div class="section-grid">
                 <div class="monitor-card" style="background:#252525;">
                     <h3>Battery 1 Voltage</h3>
@@ -145,7 +162,7 @@
         </details>
 
         <details>
-            <summary>🔋 Individual Battery Cells Temperature</summary>
+            <summary>🔋 Individual Cells Temperature</summary>
             <div class="section-grid">
                 <div class="monitor-card" style="background:#252525;">
                     <h3>Battery Cell 1 Temp</h3>
@@ -187,6 +204,43 @@
         <div class="status-card">
             <h3>System Status Assessment</h3>
             <div id="status">CONNECTING TO STREAM...</div>
+        </div>
+    </div>
+
+    <div class="history-section">
+        <h2>Visual Analytics (Last 24 Hours)</h2>
+        
+        <div class="chart-title">Bank Voltage (V)</div>
+        <div class="chart-container"><canvas id="voltageChart"></canvas></div>
+
+        <hr style="border: 0; border-top: 1px solid #333; margin: 30px 0;">
+
+        <div class="chart-title">Total Power Consumption (W)</div>
+        <div class="chart-container"><canvas id="powerChart"></canvas></div>
+
+        <hr style="border: 0; border-top: 1px solid #333; margin: 30px 0;">
+
+        <div class="chart-title">Average Bank Temperature (°C)</div>
+        <div class="chart-container"><canvas id="tempChart"></canvas></div>
+    </div>
+
+    <div class="history-section" style="margin-bottom: 50px;">
+        <h2>Raw Data Log (Last 24 Hours)</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Volt</th>
+                        <th>SoC</th>
+                        <th>Load</th>
+                        <th>Temp</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    </tbody>
+            </table>
         </div>
     </div>
 
@@ -239,13 +293,11 @@
 
         // --- FIREBASE REALTIME LISTENERS ---
         
-        // General Bank Voltage
         database.ref('/Lab/BatteryVoltage').on('value', (snapshot) => {
             const val = snapshot.val();
             document.getElementById('battery').innerText = (val !== null) ? val.toFixed(2) : "0.00";
         });
 
-        // INDIVIDUAL BATTERY VOLTAGES LISTENERS
         database.ref('/Lab/Volt_Bat1').on('value', (snapshot) => {
             const val = snapshot.val();
             document.getElementById('volt-bat1').innerText = (val !== null) ? val.toFixed(2) : "0.00";
@@ -322,7 +374,7 @@
                 statusElement.style.color = "#ff3333";
                 statusElement.style.textShadow = "0 0 15px rgba(255, 51, 51, 0.4)";
                 alarmSound.play().catch(e => {});
-            } else if (statusText.includes("WARNING")) {
+            } else if (statusText.includes("WARNING") || statusText.includes("DANGER")) {
                 statusElement.style.color = "#ff9900";
                 statusElement.style.textShadow = "0 0 15px rgba(255, 153, 0, 0.4)";
                 alarmSound.play().catch(e => {});
@@ -332,6 +384,119 @@
                 alarmSound.pause();
                 alarmSound.currentTime = 0;
             }
+        });
+
+        // ==========================================
+        // NEW: HISTORY FETCH, TABLE GENERATION & CHARTS
+        // ==========================================
+        
+        // Configure global chart colors to match dark theme
+        Chart.defaults.color = '#888888';
+        Chart.defaults.borderColor = '#2d2d2d';
+
+        // Variables to hold chart instances so we can update them without glitching
+        let volChart, pwrChart, tmpChart;
+
+        const historyRef = database.ref('/Lab/History').limitToLast(48);
+
+        historyRef.on('value', (snapshot) => {
+            const timeLabels = [];
+            const voltageHistory = [];
+            const powerHistory = [];
+            const tempHistory = [];
+            const tableRows = [];
+
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                if(!data.timestamp) return; // Skip if malformed
+                
+                // Format Time
+                const dateObj = new Date(data.timestamp);
+                const hours = dateObj.getHours().toString().padStart(2, '0');
+                const mins = dateObj.getMinutes().toString().padStart(2, '0');
+                const timeString = `${hours}:${mins}`;
+
+                // Push to arrays for charts
+                timeLabels.push(timeString);
+                voltageHistory.push(data.batteryVoltage || 0);
+                powerHistory.push(data.powerTotal || 0);
+                tempHistory.push(data.tempAverage || 0);
+
+                // Build HTML Table Row
+                const rowHtml = `
+                  <tr>
+                    <td style="color: #00ffcc; font-weight: bold;">${timeString}</td>
+                    <td style="font-size: 0.85em; color: #aaaaaa;">${data.systemStatus || '-'}</td>
+                    <td style="color: #4CAF50; font-weight: bold;">${parseFloat(data.batteryVoltage || 0).toFixed(2)}V</td>
+                    <td>${parseFloat(data.soc || 0).toFixed(1)}%</td>
+                    <td style="color: #FF9800; font-weight: bold;">${parseFloat(data.powerTotal || 0).toFixed(0)}W</td>
+                    <td style="color: #F44336; font-weight: bold;">${parseFloat(data.tempAverage || 0).toFixed(1)}°C</td>
+                  </tr>
+                `;
+                tableRows.push(rowHtml);
+            });
+
+            // 1. Render Table (Reverse so newest is at the top)
+            document.getElementById('historyTableBody').innerHTML = tableRows.reverse().join('');
+
+            // 2. Render Voltage Chart
+            const ctxVoltage = document.getElementById('voltageChart').getContext('2d');
+            if(volChart) volChart.destroy(); // Clear old chart
+            volChart = new Chart(ctxVoltage, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Bank Voltage',
+                        data: voltageHistory,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.15)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // 3. Render Power Chart
+            const ctxPower = document.getElementById('powerChart').getContext('2d');
+            if(pwrChart) pwrChart.destroy();
+            pwrChart = new Chart(ctxPower, {
+                type: 'bar',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Total Power',
+                        data: powerHistory,
+                        backgroundColor: '#FF9800',
+                        borderRadius: 3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // 4. Render Temp Chart
+            const ctxTemp = document.getElementById('tempChart').getContext('2d');
+            if(tmpChart) tmpChart.destroy();
+            tmpChart = new Chart(ctxTemp, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Average Temp',
+                        data: tempHistory,
+                        borderColor: '#F44336',
+                        backgroundColor: 'rgba(244, 67, 54, 0.15)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
         });
     </script>
 </body>
