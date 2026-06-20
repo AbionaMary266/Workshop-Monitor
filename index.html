@@ -12,6 +12,601 @@
     <style>
         /* --- GLOBAL FORMATTING & RESET --- */
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; }
+        
+        h1 { margin: 20px 0; font-size: 2rem; letter-spacing: 1px; font-weight: 600; text-transform: uppercase; color: #f0f0f0; border-bottom: 2px solid #333; padding-bottom: 10px; width: 100%; max-width: 900px; text-align: center; }
+
+        /* --- COLLAPSIBLE DROP-DOWN SECTIONS FOR MOBILE --- */
+        details { grid-column: 1 / -1; width: 100%; background: #1a1a1a; border: 1px solid #2d2d2d; border-radius: 14px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease; }
+        details[open] { border-color: #00ffcc; }
+        
+        summary { padding: 18px 20px; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 2px; color: #00ffcc; cursor: pointer; user-select: none; font-weight: bold; outline: none; display: flex; align-items: center; justify-content: space-between; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: '▾'; font-size: 1.2rem; color: #888; transition: transform 0.2s; }
+        details[open] summary::after { transform: rotate(180deg); color: #00ffcc; }
+        details[open] summary { border-bottom: 1px solid #2d2d2d; }
+
+        .section-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; padding: 20px; background: #151515; border-radius: 0 0 14px 14px; }
+
+        /* --- SPLASH SCREEN / AUDIO OVERLAY --- */
+        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d0d0d; display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s; }
+        .welcome-box { background: #1a1a1a; padding: 40px 30px; border-radius: 16px; border: 2px solid #00ffcc; box-shadow: 0 0 25px rgba(0, 255, 204, 0.25); max-width: 450px; text-align: center; width: 90%; }
+        .welcome-box h2 { color: #00ffcc; font-size: 1.8rem; margin-bottom: 15px; text-transform: uppercase; }
+        .welcome-box p { color: #aaaaaa; font-size: 1rem; line-height: 1.5; margin-bottom: 25px; }
+        #start-btn { background: #00ffcc; color: #121212; border: none; padding: 15px 40px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s ease-in-out; }
+        #start-btn:hover { background: #00ccff; transform: scale(1.05); box-shadow: 0 0 15px rgba(0, 204, 255, 0.4); }
+
+        /* --- LOW BATTERY NOTIFICATION BANNER --- */
+        #battery-alert-banner { 
+            display: none; 
+            width: 100%; 
+            max-width: 900px; 
+            background: #ff9900; 
+            color: #121212; 
+            text-align: center; 
+            padding: 15px; 
+            font-weight: bold; 
+            font-size: 1.1rem; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 0 20px rgba(255, 153, 0, 0.4);
+            animation: pulse-warn 1.5s infinite alternate;
+        }
+        @keyframes pulse-warn {
+            from { box-shadow: 0 0 10px rgba(255, 153, 0, 0.3); }
+            to { box-shadow: 0 0 25px rgba(255, 153, 0, 0.6); }
+        }
+
+        /* --- DASHBOARD MONITOR TILES GRID --- */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; width: 100%; max-width: 900px; margin-top: 10px; padding-bottom: 100px; } /* Added padding to prevent overlap with button */
+        .monitor-card { background: #1e1e1e; border: 1px solid #2d2d2d; border-radius: 14px; padding: 25px; text-align: center; box-shadow: 0 6px 16px rgba(0,0,0,0.4); transition: transform 0.2s; }
+        .monitor-card:hover { transform: translateY(-3px); }
+        .monitor-card h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #888888; margin-bottom: 15px; }
+        
+        /* DATA VALUES & METRICS UI */
+        .value-display { font-size: 2.5rem; font-weight: 700; color: #00ffcc; line-height: 1; margin-bottom: 5px; transition: color 0.4s ease; }
+        .unit { font-size: 1.1rem; font-weight: 400; color: #666666; margin-left: 3px; }
+        
+        /* ALERTS AND SYSTEM STATUS BOX */
+        .status-card { grid-column: 1 / -1; background: #1e1e1e; padding: 20px; border-radius: 14px; border: 1px solid #2d2d2d; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px; }
+        #status { font-size: 1.6rem; font-weight: bold; color: #00ff66; text-transform: uppercase; text-shadow: 0 0 10px rgba(0, 255, 102, 0.2); transition: color 0.3s ease; text-align: center;}
+
+        /* --- FLOATING NOTIFICATION BUTTON --- */
+        .floating-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #00ffcc;
+            color: #121212;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(0, 255, 204, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .floating-btn:hover { background: #00ccff; transform: scale(1.05); }
+
+        /* --- GRAPHS & DATA MODAL --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid #00ffcc;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 25px;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px; right: 20px;
+            color: #888;
+            font-size: 2rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .close-btn:hover { color: #ff3333; }
+
+        /* MODAL HISTORY & CHARTS CSS */
+        .history-section { width: 100%; margin-top: 10px; background: #1e1e1e; border: 1px solid #2d2d2d; border-radius: 14px; padding: 20px; margin-bottom: 20px;}
+        .history-section h2 { font-size: 1.3rem; color: #00ffcc; margin-bottom: 25px; text-transform: uppercase; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        
+        .chart-container { position: relative; height: 250px; width: 100%; margin-bottom: 40px; }
+        .chart-title { color: #aaaaaa; font-size: 0.9rem; text-transform: uppercase; text-align: center; margin-bottom: 10px; letter-spacing: 1px;}
+
+        .table-wrapper { max-height: 350px; overflow-y: auto; border: 1px solid #2d2d2d; border-radius: 8px; background: #151515; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        thead { background-color: #111; color: #00ffcc; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.5);}
+        th, td { padding: 15px; border-bottom: 1px solid #2d2d2d; }
+        th { text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;}
+        tbody tr:hover { background-color: #252525; }
+
+    </style>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+          .then(() => console.log("PWA Service Worker Registered!"))
+          .catch(err => console.log("Service Worker Failed", err));
+      }
+    </script>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <div class="welcome-box">
+            <h2>System Gateway</h2>
+            <p>Initialize your remote telemetry feed, confirm live data streaming socket, and arm emergency safety audio sirens.</p>
+            <button id="start-btn" onclick="startDashboard()">Start Monitor</button>
+        </div>
+    </div>
+
+    <h1>Workshop Load Control</h1>
+    
+    <div id="battery-alert-banner">⚠️ WARNING: Battery level has dropped below 55%! Please plug in to charge immediately.</div>
+    
+    <div class="dashboard-grid">
+        
+        <div class="monitor-card">
+            <h3>Total Battery Bank Status</h3>
+            <div class="value-display"><span id="battery">0.00</span><span class="unit">V</span></div>
+        </div>
+
+        <div class="monitor-card">
+            <h3>State of Charge (SoC)</h3>
+            <div class="value-display" style="color: #00ff66;"><span id="soc-display">0.0</span><span class="unit">%</span></div>
+        </div>
+
+        <div class="monitor-card">
+            <h3>Depth of Discharge (DoD)</h3>
+            <div class="value-display" style="color: #ff3333;"><span id="dod-display">0.0</span><span class="unit">%</span></div>
+        </div>
+
+        <div class="monitor-card">
+            <h3>Total Draw Load</h3>
+            <div class="value-display"><span id="power">0.0</span><span class="unit">W</span></div>
+        </div>
+
+        <div class="monitor-card">
+            <h3>Avg Battery Temp</h3>
+            <div class="value-display"><span id="temperature">0.0</span><span class="unit">°C</span></div>
+        </div>
+
+        <details>
+            <summary>⚡ Individual Battery Voltages</summary>
+            <div class="section-grid">
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery 1 Voltage</h3>
+                    <div class="value-display" style="color: #00ccff;"><span id="volt-bat1">0.00</span><span class="unit">V</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery 2 Voltage</h3>
+                    <div class="value-display" style="color: #00ccff;"><span id="volt-bat2">0.00</span><span class="unit">V</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery 3 Voltage</h3>
+                    <div class="value-display" style="color: #00ccff;"><span id="volt-bat3">0.00</span><span class="unit">V</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery 4 Voltage</h3>
+                    <div class="value-display" style="color: #00ccff;"><span id="volt-bat4">0.00</span><span class="unit">V</span></div>
+                </div>
+            </div>
+        </details>
+
+        <details>
+            <summary>🔋 Individual Cells Temperature</summary>
+            <div class="section-grid">
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery Cell 1 Temp</h3>
+                    <div class="value-display"><span id="temp-bat1">0.0</span><span class="unit">°C</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery Cell 2 Temp</h3>
+                    <div class="value-display"><span id="temp-bat2">0.0</span><span class="unit">°C</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery Cell 3 Temp</h3>
+                    <div class="value-display"><span id="temp-bat3">0.0</span><span class="unit">°C</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Battery Cell 4 Temp</h3>
+                    <div class="value-display"><span id="temp-bat4">0.0</span><span class="unit">°C</span></div>
+                </div>
+            </div>
+        </details>
+
+        <details>
+            <summary>🔌 Individual Appliance Loads</summary>
+            <div class="section-grid">
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Lab Lights Power</h3>
+                    <div class="value-display" style="color: #e0e0e0;"><span id="power-lights">0.0</span><span class="unit">W</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Lab Fans Power</h3>
+                    <div class="value-display" style="color: #e0e0e0;"><span id="power-fans">0.0</span><span class="unit">W</span></div>
+                </div>
+                <div class="monitor-card" style="background:#252525;">
+                    <h3>Workbench Bench Power</h3>
+                    <div class="value-display" style="color: #e0e0e0;"><span id="power-bench">0.0</span><span class="unit">W</span></div>
+                </div>
+            </div>
+        </details>
+
+        <div class="status-card">
+            <h3>System Status Assessment</h3>
+            <div id="status">CONNECTING TO STREAM...</div>
+        </div>
+    </div>
+
+    <button class="floating-btn" onclick="toggleDetailsModal()">
+        📈 View Graphs & Data
+    </button>
+
+    <div id="detailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="toggleDetailsModal()">&times;</span>
+            <h2 style="color: #fff; text-align: center; margin-bottom: 20px;">Telemetry Analytics</h2>
+
+            <div class="history-section">
+                <h2>Visual Analytics (Last 24 Hours)</h2>
+                
+                <div class="chart-title">Bank Voltage (V)</div>
+                <div class="chart-container"><canvas id="voltageChart"></canvas></div>
+
+                <hr style="border: 0; border-top: 1px solid #333; margin: 30px 0;">
+
+                <div class="chart-title">Total Power Consumption (W)</div>
+                <div class="chart-container"><canvas id="powerChart"></canvas></div>
+
+                <hr style="border: 0; border-top: 1px solid #333; margin: 30px 0;">
+
+                <div class="chart-title">Average Bank Temperature (°C)</div>
+                <div class="chart-container"><canvas id="tempChart"></canvas></div>
+            </div>
+
+            <div class="history-section">
+                <h2>Raw Data Log (Last 24 Hours)</h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Volt</th>
+                                <th>SoC</th>
+                                <th>Load</th>
+                                <th>Temp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const alarmSound = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'); 
+        alarmSound.loop = true;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZDLpFzSf9UY0Ema_iEtGfNDmdnPf69EQ",
+            authDomain: "workshop-monitor-83eb6.firebaseapp.com",
+            databaseURL: "https://workshop-monitor-83eb6-default-rtdb.firebaseio.com",
+            projectId: "workshop-monitor-83eb6",
+            storageBucket: "workshop-monitor-83eb6.firebasestorage.app",
+            messagingSenderId: "46018915539",
+            appId: "1:46018915539:web:f75ef7e2b4cea45eddf826"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let volChart, pwrChart, tmpChart; // Chart variables
+
+        function startDashboard() {
+            alarmSound.play().then(() => {
+                alarmSound.pause();
+                alarmSound.currentTime = 0;
+            }).catch(err => console.log("Audio scheme ready."));
+
+            const splash = document.getElementById('splash-screen');
+            splash.style.opacity = 0;
+            setTimeout(() => { splash.style.display = 'none'; }, 500);
+        }
+
+        // --- MODAL TOGGLE LOGIC ---
+        function toggleDetailsModal() {
+            const modal = document.getElementById('detailsModal');
+            if (modal.classList.contains('active')) {
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 300);
+            } else {
+                modal.style.display = 'flex';
+                setTimeout(() => {
+                    modal.classList.add('active');
+                    // Force charts to resize so they fit perfectly when the modal opens
+                    if (volChart) volChart.resize();
+                    if (pwrChart) pwrChart.resize();
+                    if (tmpChart) tmpChart.resize();
+                }, 10);
+            }
+        }
+
+        // Close modal when clicking outside the box
+        window.onclick = function(event) {
+            const modal = document.getElementById('detailsModal');
+            if (event.target == modal) {
+                toggleDetailsModal();
+            }
+        }
+
+        function updateTemperatureCard(elementId, val) {
+            const container = document.getElementById(elementId);
+            if (val === null) {
+                container.innerText = "0.0";
+                container.parentElement.style.color = "#666666";
+                return;
+            }
+            container.innerText = val.toFixed(1);
+            if (val > 32.0) {
+                container.parentElement.style.color = "#ff3333";
+            } else if (val > 30.0) {
+                container.parentElement.style.color = "#ff6600";
+            } else if (val > 28.0) {
+                container.parentElement.style.color = "#ffcc00";
+            } else {
+                container.parentElement.style.color = "#00ff66";
+            }
+        }
+
+        // --- FIREBASE REALTIME LISTENERS ---
+        
+        database.ref('/Lab/BatteryVoltage').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('battery').innerText = (val !== null) ? val.toFixed(2) : "0.00";
+        });
+
+        database.ref('/Lab/Volt_Bat1').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('volt-bat1').innerText = (val !== null) ? val.toFixed(2) : "0.00";
+        });
+        database.ref('/Lab/Volt_Bat2').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('volt-bat2').innerText = (val !== null) ? val.toFixed(2) : "0.00";
+        });
+        database.ref('/Lab/Volt_Bat3').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('volt-bat3').innerText = (val !== null) ? val.toFixed(2) : "0.00";
+        });
+        database.ref('/Lab/Volt_Bat4').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('volt-bat4').innerText = (val !== null) ? val.toFixed(2) : "0.00";
+        });
+
+        database.ref('/Lab/State_Of_Charge_Percent').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('soc-display').innerText = (val !== null) ? val.toFixed(1) : "0.0";
+        });
+
+        database.ref('/Lab/Depth_Of_Discharge_Percent').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('dod-display').innerText = (val !== null) ? val.toFixed(1) : "0.0";
+        });
+
+        database.ref('/Lab/Battery_Low_Alert').on('value', (snapshot) => {
+            const isLow = snapshot.val();
+            document.getElementById('battery-alert-banner').style.display = (isLow === true) ? 'block' : 'none';
+        });
+
+        database.ref('/Lab/Power_Total_W').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('power').innerText = (val !== null) ? val.toFixed(1) : "0.0";
+        });
+
+        database.ref('/Lab/Temp_Average_Bank').on('value', (snapshot) => {
+            updateTemperatureCard('temperature', snapshot.val());
+        });
+
+        database.ref('/Lab/Temp_Bat1').on('value', (snapshot) => {
+            updateTemperatureCard('temp-bat1', snapshot.val());
+        });
+        database.ref('/Lab/Temp_Bat2').on('value', (snapshot) => {
+            updateTemperatureCard('temp-bat2', snapshot.val());
+        });
+        database.ref('/Lab/Temp_Bat3').on('value', (snapshot) => {
+            updateTemperatureCard('temp-bat3', snapshot.val());
+        });
+        database.ref('/Lab/Temp_Bat4').on('value', (snapshot) => {
+            updateTemperatureCard('temp-bat4', snapshot.val());
+        });
+
+        database.ref('/Lab/Power_Lights_W').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('power-lights').innerText = (val !== null) ? val.toFixed(1) : "0.0";
+        });
+        database.ref('/Lab/Power_Fans_W').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('power-fans').innerText = (val !== null) ? val.toFixed(1) : "0.0";
+        });
+        database.ref('/Lab/Power_Bench_W').on('value', (snapshot) => {
+            const val = snapshot.val();
+            document.getElementById('power-bench').innerText = (val !== null) ? val.toFixed(1) : "0.0";
+        });
+
+        database.ref('/Lab/System_Status').on('value', (snapshot) => {
+            const statusText = snapshot.val() || "UNKNOWN DATA STATE";
+            const statusElement = document.getElementById('status');
+            statusElement.innerText = statusText;
+            
+            if (statusText.includes("CRITICAL")) {
+                statusElement.style.color = "#ff3333";
+                statusElement.style.textShadow = "0 0 15px rgba(255, 51, 51, 0.4)";
+                alarmSound.play().catch(e => {});
+            } else if (statusText.includes("WARNING") || statusText.includes("DANGER")) {
+                statusElement.style.color = "#ff9900";
+                statusElement.style.textShadow = "0 0 15px rgba(255, 153, 0, 0.4)";
+                alarmSound.play().catch(e => {});
+            } else {
+                statusElement.style.color = "#00ff66";
+                statusElement.style.textShadow = "0 0 15px rgba(0, 255, 102, 0.3)";
+                alarmSound.pause();
+                alarmSound.currentTime = 0;
+            }
+        });
+
+        // ==========================================
+        // HISTORY FETCH, TABLE GENERATION & CHARTS
+        // ==========================================
+        
+        Chart.defaults.color = '#888888';
+        Chart.defaults.borderColor = '#2d2d2d';
+
+        const historyRef = database.ref('/Lab/History').limitToLast(48);
+
+        historyRef.on('value', (snapshot) => {
+            const timeLabels = [];
+            const voltageHistory = [];
+            const powerHistory = [];
+            const tempHistory = [];
+            const tableRows = [];
+
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                if(!data.timestamp) return; // Skip if malformed
+                
+                // Format Time
+                const dateObj = new Date(data.timestamp);
+                const hours = dateObj.getHours().toString().padStart(2, '0');
+                const mins = dateObj.getMinutes().toString().padStart(2, '0');
+                const timeString = `${hours}:${mins}`;
+
+                timeLabels.push(timeString);
+                voltageHistory.push(data.batteryVoltage || 0);
+                powerHistory.push(data.powerTotal || 0);
+                tempHistory.push(data.tempAverage || 0);
+
+                const rowHtml = `
+                  <tr>
+                    <td style="color: #00ffcc; font-weight: bold;">${timeString}</td>
+                    <td style="font-size: 0.85em; color: #aaaaaa;">${data.systemStatus || '-'}</td>
+                    <td style="color: #4CAF50; font-weight: bold;">${parseFloat(data.batteryVoltage || 0).toFixed(2)}V</td>
+                    <td>${parseFloat(data.soc || 0).toFixed(1)}%</td>
+                    <td style="color: #FF9800; font-weight: bold;">${parseFloat(data.powerTotal || 0).toFixed(0)}W</td>
+                    <td style="color: #F44336; font-weight: bold;">${parseFloat(data.tempAverage || 0).toFixed(1)}°C</td>
+                  </tr>
+                `;
+                tableRows.push(rowHtml);
+            });
+
+            document.getElementById('historyTableBody').innerHTML = tableRows.reverse().join('');
+
+            const ctxVoltage = document.getElementById('voltageChart').getContext('2d');
+            if(volChart) volChart.destroy(); 
+            volChart = new Chart(ctxVoltage, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Bank Voltage',
+                        data: voltageHistory,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.15)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const ctxPower = document.getElementById('powerChart').getContext('2d');
+            if(pwrChart) pwrChart.destroy();
+            pwrChart = new Chart(ctxPower, {
+                type: 'bar',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Total Power',
+                        data: powerHistory,
+                        backgroundColor: '#FF9800',
+                        borderRadius: 3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const ctxTemp = document.getElementById('tempChart').getContext('2d');
+            if(tmpChart) tmpChart.destroy();
+            tmpChart = new Chart(ctxTemp, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Average Temp',
+                        data: tempHistory,
+                        borderColor: '#F44336',
+                        backgroundColor: 'rgba(244, 67, 54, 0.15)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        });
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workshop Load-Shedding Hub</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* --- GLOBAL FORMATTING & RESET --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; overflow-x: hidden; }
         
         h1 { margin: 20px 0; font-size: 2rem; letter-spacing: 1px; font-weight: 600; text-transform: uppercase; color: #f0f0f0; border-bottom: 2px solid #333; padding-bottom: 10px; width: 100%; max-width: 900px; text-align: center; }
